@@ -19,8 +19,8 @@
 
         <div v-if="!matchedUser && streamActive" class="camera-guide">
           <div class="face-oval"></div>
-          <p v-if="!verifying">Position your face to verify</p>
-          <p v-else class="verifying-text">Verifying...</p>
+          <!-- <p v-if="!verifying">Position your face to verify</p>
+          <p v-else class="verifying-text">Verifying...</p> -->
         </div>
 
         <div v-if="matchStatus" :class="['status-badge', matchStatus.type]">
