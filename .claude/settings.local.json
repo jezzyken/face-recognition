@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(node -e \"\nfetch\\(''https://api.luxand.cloud/v2/subject'', {\n  method: ''POST'',\n  headers: {\n    ''Authorization'': ''Token 33f56b01d2c040fd8d54de5fa27522dd''\n  },\n  body: new URLSearchParams\\({photo: ''test'', name: ''test'', id: ''test''}\\)\n}\\)\n.then\\(r => r.text\\(\\)\\)\n.then\\(t => console.log\\(''Response:'', t.substring\\(0, 500\\)\\)\\)\n.catch\\(e => console.error\\(''Error:'', e.message\\)\\);\n\")",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(cd:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

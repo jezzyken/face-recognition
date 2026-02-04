@@ -76,6 +76,11 @@
         </div>
       </template>
 
+      <!-- Debug info -->
+      <div style="display: none;">
+        Debug: matchedUser = {{ matchedUser }}
+      </div>
+
       <div class="user-info">
         <div class="user-avatar">
           <el-icon><User /></el-icon>
@@ -247,6 +252,8 @@ async function verifyFace(photo) {
   try {
     const response = await axios.post('/api/users/verify', { photo });
 
+    console.log('Verify response:', response.data);
+
     if (response.data.matched) {
       matchedUser.value = {
         ...response.data.user,
@@ -256,6 +263,8 @@ async function verifyFace(photo) {
         type: 'success',
         message: `Verified!`,
       };
+
+      console.log('Matched user set:', matchedUser.value);
 
       if (!autoVerify.value) {
         stopCamera();
@@ -268,15 +277,17 @@ async function verifyFace(photo) {
       matchedUser.value = null;
       matchStatus.value = {
         type: 'info',
-        message: 'No match',
+        message: response.data.message || 'No match',
       };
     }
   } catch (error) {
     console.error('Verification error:', error);
+    console.error('Error response:', error.response);
+    console.error('Error data:', error.response?.data);
     matchedUser.value = null;
     matchStatus.value = {
       type: 'error',
-      message: error.response?.data?.message || 'Failed',
+      message: error.response?.data?.message || error.message || 'Failed',
     };
   } finally {
     verifying.value = false;
