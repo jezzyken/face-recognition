@@ -65,6 +65,14 @@
       </div>
     </el-card>
 
+    <!-- Debug: Show if matchedUser exists -->
+    <div v-if="matchedUser" style="background: #67c23a; color: white; padding: 16px; border-radius: 8px; margin-top: 16px;">
+      <h3>DEBUG: User matched!</h3>
+      <p>Name: {{ matchedUser.name }}</p>
+      <p>Email: {{ matchedUser.email }}</p>
+      <p>Confidence: {{ matchedUser.confidence }}</p>
+    </div>
+
     <el-card
       v-if="matchedUser"
       class="user-card"
@@ -252,7 +260,13 @@ async function verifyFace(photo) {
   try {
     const response = await axios.post('/api/users/verify', { photo });
 
-    console.log('Verify response:', response.data);
+    console.log('=== VERIFY RESPONSE ===');
+    console.log('Full response:', response);
+    console.log('Response data:', response.data);
+    console.log('Matched?', response.data.matched);
+    console.log('User:', response.data.user);
+    console.log('Confidence:', response.data.confidence);
+    console.log('=====================');
 
     if (response.data.matched) {
       matchedUser.value = {
@@ -264,7 +278,13 @@ async function verifyFace(photo) {
         message: `Verified!`,
       };
 
-      console.log('Matched user set:', matchedUser.value);
+      console.log('=== MATCHED USER SET ===');
+      console.log('matchedUser.value:', matchedUser.value);
+      console.log('matchedUser.value.name:', matchedUser.value.name);
+      console.log('========================');
+
+      // Show an alert to verify
+      alert(`VERIFIED!\n\nName: ${matchedUser.value.name}\nEmail: ${matchedUser.value.email}\nConfidence: ${matchedUser.value.confidence}`);
 
       if (!autoVerify.value) {
         stopCamera();
