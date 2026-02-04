@@ -28,18 +28,18 @@ router.post('/register', upload.single('photo'), async (req, res) => {
     const base64Data = photo.replace(/^data:image\/jpeg;base64,/, '').replace(/^data:image\/png;base64,/, '');
     const imageBuffer = Buffer.from(base64Data, 'base64');
 
-    // Generate a unique face ID
-    const faceId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Enroll face with Luxand - use email as person identifier
+    const luxandResult = await enrollFace(imageBuffer, email);
 
-    // Enroll face with Luxand
-    await enrollFace(imageBuffer, faceId);
+    // Luxand returns: { uuid: "person-uuid", face_uuid: ["face-uuid-1", ...] }
+    const personUuid = luxandResult.uuid || luxandResult.id;
 
-    // Save user to MongoDB
+    // Save user to MongoDB with the Luxand person UUID
     const user = new User({
       name,
       email,
       phone,
-      faceId,
+      faceId: personUuid,
     });
 
     await user.save();
@@ -91,13 +91,13 @@ router.post('/verify', upload.single('photo'), async (req, res) => {
     // Verify face with Luxand
     const luxandResult = await verifyFace(imageBuffer);
 
-    // Luxand returns array of matches
+    // Luxand returns array of matches: [{ uuid: "person-uuid", probability: 0.95, name: "Person Name" }, ...]
     if (luxandResult && luxandResult.length > 0) {
       const bestMatch = luxandResult[0]; // First result is the best match
       const confidence = bestMatch.probability || 0;
 
-      // Find user by face ID
-      const user = await User.findOne({ faceId: bestMatch.id });
+      // Find user by face ID (using uuid from Luxand response)
+      const user = await User.findOne({ faceId: bestMatch.uuid || bestMatch.id });
 
       if (user) {
         res.json({
