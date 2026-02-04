@@ -1,4 +1,5 @@
 import FormData from 'form-data';
+import axios from 'axios';
 
 const LUXAND_API_URL = 'https://api.luxand.cloud';
 
@@ -36,49 +37,34 @@ export async function enrollFace(imageBuffer, userId) {
   form.append('store', '1'); // Store the photo
 
   try {
-    const response = await fetch(`${LUXAND_API_URL}/v2/person`, {
-      method: 'POST',
+    const response = await axios.post(`${LUXAND_API_URL}/v2/person`, form, {
       headers: {
         'token': process.env.LUXAND_API_TOKEN,
         ...form.getHeaders(),
       },
-      body: form,
     });
-
-    const data = await parseResponse(response);
 
     // Log response details for debugging
     console.log('Luxand enroll response status:', response.status);
-    console.log('Luxand enroll response data:', JSON.stringify(data));
-
-    if (!response.ok) {
-      const errorMsg = data?.error?.message || data?.message || data?.status || `HTTP ${response.status}`;
-      throw new Error(`Luxand API error: ${errorMsg}`);
-    }
+    console.log('Luxand enroll response data:', JSON.stringify(response.data));
 
     // Check if UUID is in response body (some API versions may return it)
-    if (data?.uuid || data?.id) {
-      return { uuid: data.uuid || data.id };
+    if (response.data?.uuid || response.data?.id) {
+      return { uuid: response.data.uuid || response.data.id };
     }
 
     // If no UUID in response, list persons to find the one we just created
     console.log('No UUID in enrollment response, listing persons to find newly created person...');
-    const listResponse = await fetch(`${LUXAND_API_URL}/v2/person`, {
-      method: 'GET',
+    const listResponse = await axios.get(`${LUXAND_API_URL}/v2/person`, {
       headers: {
         'token': process.env.LUXAND_API_TOKEN,
       },
     });
 
-    const listData = await parseResponse(listResponse);
-    console.log('Luxand list persons response:', JSON.stringify(listData));
-
-    if (!listResponse.ok) {
-      throw new Error(`Failed to list persons: ${listData?.message || 'Unknown error'}`);
-    }
+    console.log('Luxand list persons response:', JSON.stringify(listResponse.data));
 
     // Find the person by name (userId is the name we used)
-    const persons = Array.isArray(listData) ? listData : (listData?.persons || []);
+    const persons = Array.isArray(listResponse.data) ? listResponse.data : (listResponse.data?.persons || []);
     const newPerson = persons.find(p => p.name === userId || p.id === userId);
 
     if (!newPerson) {
@@ -88,6 +74,12 @@ export async function enrollFace(imageBuffer, userId) {
     return { uuid: newPerson.uuid || newPerson.id };
   } catch (error) {
     console.error('Luxand enroll error:', error.message);
+    if (error.response) {
+      console.error('Error response data:', JSON.stringify(error.response.data));
+      console.error('Error response status:', error.response.status);
+      const errorMsg = error.response.data?.message || error.response.data?.error || error.message;
+      throw new Error(`Luxand API error: ${errorMsg}`);
+    }
     throw error;
   }
 }
@@ -102,26 +94,21 @@ export async function verifyFace(imageBuffer) {
   form.append('photo', imageBuffer, { filename: 'photo.jpg', contentType: 'image/jpeg' });
 
   try {
-    const response = await fetch(`${LUXAND_API_URL}/photo/search/v2`, {
-      method: 'POST',
+    const response = await axios.post(`${LUXAND_API_URL}/photo/search/v2`, form, {
       headers: {
         'token': process.env.LUXAND_API_TOKEN,
         ...form.getHeaders(),
       },
-      body: form,
     });
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      const errorMsg = data?.error?.message || data?.message || data?.status || `HTTP ${response.status}`;
-      throw new Error(`Luxand API error: ${errorMsg}`);
-    }
-
     // Returns: [{ uuid: "person-uuid", probability: 0.95, name: "Person Name" }, ...]
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Luxand verify error:', error.message);
+    if (error.response) {
+      const errorMsg = error.response.data?.message || error.response.data?.error || error.message;
+      throw new Error(`Luxand API error: ${errorMsg}`);
+    }
     throw error;
   }
 }
@@ -133,23 +120,19 @@ export async function verifyFace(imageBuffer) {
  */
 export async function deleteFace(faceId) {
   try {
-    const response = await fetch(`${LUXAND_API_URL}/person/${faceId}`, {
-      method: 'DELETE',
+    const response = await axios.delete(`${LUXAND_API_URL}/person/${faceId}`, {
       headers: {
         'token': process.env.LUXAND_API_TOKEN,
       },
     });
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      const errorMsg = data?.error?.message || data?.message || data?.status || `HTTP ${response.status}`;
-      throw new Error(`Luxand API error: ${errorMsg}`);
-    }
-
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Luxand delete error:', error.message);
+    if (error.response) {
+      const errorMsg = error.response.data?.message || error.response.data?.error || error.message;
+      throw new Error(`Luxand API error: ${errorMsg}`);
+    }
     throw error;
   }
 }
