@@ -25,6 +25,9 @@ async function parseResponse(response) {
  * Enroll a person with face photo
  * POST /v2/person
  * Docs: https://documenter.getpostman.com/view/1485228/UVeCR95R
+ *
+ * Note: The enrollment may not return UUID in response body.
+ * We need to list persons to find the newly created person by name.
  */
 export async function enrollFace(imageBuffer, userId) {
   const form = new FormData();
@@ -44,13 +47,45 @@ export async function enrollFace(imageBuffer, userId) {
 
     const data = await parseResponse(response);
 
+    // Log response details for debugging
+    console.log('Luxand enroll response status:', response.status);
+    console.log('Luxand enroll response data:', JSON.stringify(data));
+
     if (!response.ok) {
       const errorMsg = data?.error?.message || data?.message || data?.status || `HTTP ${response.status}`;
       throw new Error(`Luxand API error: ${errorMsg}`);
     }
 
-    // Returns: { uuid: "person-uuid", face_uuid: ["face-uuid-1", ...] }
-    return data;
+    // Check if UUID is in response body (some API versions may return it)
+    if (data?.uuid || data?.id) {
+      return { uuid: data.uuid || data.id };
+    }
+
+    // If no UUID in response, list persons to find the one we just created
+    console.log('No UUID in enrollment response, listing persons to find newly created person...');
+    const listResponse = await fetch(`${LUXAND_API_URL}/v2/person`, {
+      method: 'GET',
+      headers: {
+        'token': process.env.LUXAND_API_TOKEN,
+      },
+    });
+
+    const listData = await parseResponse(listResponse);
+    console.log('Luxand list persons response:', JSON.stringify(listData));
+
+    if (!listResponse.ok) {
+      throw new Error(`Failed to list persons: ${listData?.message || 'Unknown error'}`);
+    }
+
+    // Find the person by name (userId is the name we used)
+    const persons = Array.isArray(listData) ? listData : (listData?.persons || []);
+    const newPerson = persons.find(p => p.name === userId || p.id === userId);
+
+    if (!newPerson) {
+      throw new Error(`Person not found after enrollment. Searched for name: ${userId}`);
+    }
+
+    return { uuid: newPerson.uuid || newPerson.id };
   } catch (error) {
     console.error('Luxand enroll error:', error.message);
     throw error;

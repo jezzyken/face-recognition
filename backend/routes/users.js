@@ -31,8 +31,16 @@ router.post('/register', upload.single('photo'), async (req, res) => {
     // Enroll face with Luxand - use email as person identifier
     const luxandResult = await enrollFace(imageBuffer, email);
 
+    // Debug: Log the Luxand API response
+    console.log('Luxand enrollment result:', JSON.stringify(luxandResult));
+
     // Luxand returns: { uuid: "person-uuid", face_uuid: ["face-uuid-1", ...] }
-    const personUuid = luxandResult.uuid || luxandResult.id;
+    // Also check for alternative field names
+    const personUuid = luxandResult?.uuid || luxandResult?.id || luxandResult?.person_uuid;
+
+    if (!personUuid) {
+      throw new Error('Luxand API did not return a person UUID. Response: ' + JSON.stringify(luxandResult));
+    }
 
     // Save user to MongoDB with the Luxand person UUID
     const user = new User({
