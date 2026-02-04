@@ -156,7 +156,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  stopVerification();
+  stopAutoVerify();
   stopCamera();
 });
 
@@ -216,7 +216,6 @@ async function startCamera() {
 }
 
 function stopCamera() {
-  stopVerification();
   stopAutoVerify();
   if (streamRef.value) {
     streamRef.value.getTracks().forEach((track) => track.stop());
