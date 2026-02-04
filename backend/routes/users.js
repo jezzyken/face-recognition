@@ -99,13 +99,25 @@ router.post('/verify', upload.single('photo'), async (req, res) => {
     // Verify face with Luxand
     const luxandResult = await verifyFace(imageBuffer);
 
+    console.log('Verification - Luxand result:', JSON.stringify(luxandResult));
+
     // Luxand returns array of matches: [{ uuid: "person-uuid", probability: 0.95, name: "Person Name" }, ...]
     if (luxandResult && luxandResult.length > 0) {
       const bestMatch = luxandResult[0]; // First result is the best match
       const confidence = bestMatch.probability || 0;
 
+      console.log('Best match:', JSON.stringify(bestMatch));
+
       // Find user by face ID (using uuid from Luxand response)
-      const user = await User.findOne({ faceId: bestMatch.uuid || bestMatch.id });
+      const searchId = bestMatch.uuid || bestMatch.id;
+      console.log('Searching for user with faceId:', searchId);
+
+      const user = await User.findOne({ faceId: searchId });
+
+      console.log('Found user:', user ? 'YES' : 'NO');
+      if (user) {
+        console.log('User email:', user.email);
+      }
 
       if (user) {
         res.json({

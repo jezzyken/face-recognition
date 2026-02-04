@@ -101,11 +101,17 @@ export async function verifyFace(imageBuffer) {
       },
     });
 
+    // Log response details for debugging
+    console.log('Luxand verify response status:', response.status);
+    console.log('Luxand verify response data:', JSON.stringify(response.data));
+
     // Returns: [{ uuid: "person-uuid", probability: 0.95, name: "Person Name" }, ...]
     return response.data;
   } catch (error) {
     console.error('Luxand verify error:', error.message);
     if (error.response) {
+      console.error('Error response data:', JSON.stringify(error.response.data));
+      console.error('Error response status:', error.response.status);
       const errorMsg = error.response.data?.message || error.response.data?.error || error.message;
       throw new Error(`Luxand API error: ${errorMsg}`);
     }
